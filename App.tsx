@@ -1,15 +1,22 @@
 
 import React, { useState, useEffect } from 'react';
 import { Dashboard } from './components/Dashboard';
+import { LandingPage } from './components/LandingPage';
+import { PrivacyPolicy } from './components/PrivacyPolicy';
+import { TermsOfService } from './components/TermsOfService';
+import { StorageSetupModal } from './components/StorageSetupModal';
 import { User, Language, Theme, UserSettings } from './types';
 import { TRANSLATIONS, CURRENCIES, ENTITY_TYPES } from './constants';
-import { Sun, Moon, Languages, LogOut, CheckCircle, Briefcase, Facebook, Lock, ShieldCheck, Wallet, PieChart } from 'lucide-react';
+import { Sun, Moon, Languages, LogOut, CheckCircle, Briefcase, Facebook, Lock, ShieldCheck, Wallet, PieChart, Home } from 'lucide-react';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [lang, setLang] = useState<Language>('en');
   const [theme, setTheme] = useState<Theme>('light');
   const [loading, setLoading] = useState(false);
+  const [showLanding, setShowLanding] = useState(true);
+  const [showPrivacy, setShowPrivacy] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
   
   // Setup Wizard State
   const [showSetup, setShowSetup] = useState(false);
@@ -18,6 +25,10 @@ const App: React.FC = () => {
     entityName: '',
     entityType: 'individual'
   });
+
+  // Storage State
+  const [showStorageSetup, setShowStorageSetup] = useState(false);
+  const [fileHandle, setFileHandle] = useState<any>(null);
 
   // Lock State
   const [isLocked, setIsLocked] = useState(false);
@@ -40,6 +51,7 @@ const App: React.FC = () => {
     if (savedUser) {
       const parsedUser = JSON.parse(savedUser);
       setUser(parsedUser);
+      // Keep landing page as main page - don't hide it
       
       // Check for PIN
       if (parsedUser.settings?.securityPin) {
@@ -49,6 +61,13 @@ const App: React.FC = () => {
       // If user exists but no settings, show setup
       if (!parsedUser.settings) {
          setShowSetup(true);
+         setShowLanding(false); // Hide landing during setup
+      } else if (!parsedUser.settings.storageType) {
+         setShowStorageSetup(true);
+         setShowLanding(false); // Hide landing during storage setup
+      } else if (parsedUser.settings.storageType === 'file') {
+         setShowStorageSetup(true);
+         setShowLanding(false); // Hide landing during file selection
       }
     }
   }, []);
@@ -89,9 +108,14 @@ const App: React.FC = () => {
       setUser(newUser);
       localStorage.setItem('mda_user', JSON.stringify(newUser));
       setLoading(false);
+      // Keep landing page visible - don't hide it
       
       if (!newUser.settings) {
         setShowSetup(true);
+        setShowLanding(false); // Hide only for setup
+      } else if (!newUser.settings.storageType) {
+        setShowStorageSetup(true);
+        setShowLanding(false); // Hide only for storage setup
       }
     }, 800);
   };
@@ -102,6 +126,9 @@ const App: React.FC = () => {
     localStorage.removeItem('mda_user');
     setIsLocked(false);
     setPinInput('');
+    setShowLanding(true); // Return to landing page after logout
+    setFileHandle(null);
+    setShowStorageSetup(false);
   };
 
   const handleSetupComplete = (e: React.FormEvent) => {
@@ -117,6 +144,35 @@ const App: React.FC = () => {
     setUser(updatedUser);
     localStorage.setItem('mda_user', JSON.stringify(updatedUser));
     setShowSetup(false);
+    
+    // After account setup, show storage setup
+    if (!updatedUser.settings.storageType) {
+      setShowStorageSetup(true);
+    } else {
+      setShowLanding(true); // Return to landing page after setup
+    }
+  };
+
+  const handleStorageSetupComplete = (type: 'local' | 'file', handle?: any) => {
+    if (!user) return;
+    
+    const updatedUser = { 
+      ...user, 
+      settings: { 
+        ...user.settings!, 
+        storageType: type 
+      } 
+    };
+    
+    setUser(updatedUser);
+    localStorage.setItem('mda_user', JSON.stringify(updatedUser));
+    
+    if (type === 'file' && handle) {
+      setFileHandle(handle);
+    }
+    
+    setShowStorageSetup(false);
+    setShowLanding(true); // Return to landing page after storage setup
   };
 
   const handleUnlock = () => {
@@ -143,13 +199,13 @@ const App: React.FC = () => {
   if (user && isLocked) {
     return (
       <div className={`min-h-screen flex flex-col items-center justify-center p-4 ${theme === 'dark' ? 'mesh-bg' : 'light-mesh-bg'}`}>
-         <div className="glass-panel p-8 rounded-3xl w-full max-w-sm text-center animate-zoom-in relative overflow-hidden">
+         <div className="glass-panel p-6 sm:p-8 rounded-3xl w-full max-w-sm text-center animate-zoom-in relative overflow-hidden">
            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-red-500 to-pink-500"></div>
-           <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-6 text-red-500 ring-4 ring-red-500/20">
-             <Lock size={36} />
+           <div className="w-16 h-16 sm:w-20 sm:h-20 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-6 text-red-500 ring-4 ring-red-500/20">
+             <Lock size={32} className="sm:w-9 sm:h-9" />
            </div>
-           <h2 className="text-2xl font-bold dark:text-white mb-2">{t.enterPin}</h2>
-           <p className="text-gray-500 dark:text-gray-400 mb-8">{user.name}</p>
+           <h2 className="text-xl sm:text-2xl font-bold dark:text-white mb-2">{t.enterPin}</h2>
+           <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 mb-8">{user.name}</p>
            
            <input
              type="password"
@@ -176,12 +232,63 @@ const App: React.FC = () => {
   }
 
   if (!user) {
+    // Show Privacy Policy
+    if (showPrivacy) {
+      return (
+        <PrivacyPolicy
+          lang={lang}
+          theme={theme}
+          onBack={() => {
+            setShowPrivacy(false);
+            setShowLanding(true);
+          }}
+        />
+      );
+    }
+
+    // Show Terms of Service
+    if (showTerms) {
+      return (
+        <TermsOfService
+          lang={lang}
+          theme={theme}
+          onBack={() => {
+            setShowTerms(false);
+            setShowLanding(true);
+          }}
+        />
+      );
+    }
+
+    // Show Landing Page first
+    if (showLanding) {
+      return (
+        <LandingPage
+          lang={lang}
+          theme={theme}
+          onToggleLang={toggleLang}
+          onToggleTheme={toggleTheme}
+          onGetStarted={() => setShowLanding(false)}
+          onShowPrivacy={() => {
+            setShowLanding(false);
+            setShowPrivacy(true);
+          }}
+          onShowTerms={() => {
+            setShowLanding(false);
+            setShowTerms(true);
+          }}
+          user={user}
+          onGoToDashboard={() => setShowLanding(false)}
+        />
+      );
+    }
+
     // Login Screen
     return (
       <div className={`min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden ${theme === 'dark' ? 'mesh-bg' : 'light-mesh-bg'}`}>
         
-        {/* Floating Elements */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {/* Floating Elements - Hidden on mobile for cleaner look */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none hidden sm:block">
           <div className="absolute top-[10%] left-[10%] text-6xl opacity-20 animate-float select-none blur-sm">💰</div>
           <div className="absolute top-[20%] right-[15%] text-4xl opacity-20 animate-float select-none blur-sm" style={{ animationDelay: '1s' }}>💎</div>
           <div className="absolute bottom-[15%] left-[15%] text-6xl opacity-20 animate-float select-none blur-sm" style={{ animationDelay: '2s' }}>🚀</div>
@@ -189,7 +296,7 @@ const App: React.FC = () => {
         </div>
 
         {/* Content */}
-        <div className="relative z-10 w-full max-w-md glass-panel p-8 rounded-3xl animate-pop-in border-t border-white/40">
+        <div className="relative z-10 w-full max-w-md glass-panel p-6 sm:p-8 rounded-3xl animate-pop-in border-t border-white/40">
           <div className="flex justify-end gap-3 mb-8">
             <button onClick={toggleTheme} className="p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition active:scale-90 text-gray-600 dark:text-gray-300">
               {theme === 'light' ? <Moon size={20} /> : <Sun size={20} className="text-yellow-400" />}
@@ -199,14 +306,14 @@ const App: React.FC = () => {
             </button>
           </div>
 
-          <div className="text-center mb-10">
-            <div className="w-20 h-20 bg-gradient-to-tr from-blue-500 to-purple-600 rounded-2xl mx-auto mb-6 flex items-center justify-center shadow-lg shadow-blue-500/30 rotate-3 hover:rotate-6 transition-transform duration-500">
-              <Wallet size={40} className="text-white" />
+          <div className="text-center mb-8 sm:mb-10">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-tr from-blue-500 to-purple-600 rounded-2xl mx-auto mb-6 flex items-center justify-center shadow-lg shadow-blue-500/30 rotate-3 hover:rotate-6 transition-transform duration-500">
+              <Wallet size={32} className="text-white sm:w-10 sm:h-10" />
             </div>
-            <h1 className="text-4xl font-black text-gradient mb-3 animate-slide-up">
+            <h1 className="text-3xl sm:text-4xl font-black text-gradient mb-3 animate-slide-up">
               {t.appTitle}
             </h1>
-            <p className="text-gray-500 dark:text-gray-400 animate-slide-up font-medium" style={{animationDelay: '0.1s'}}>{t.signInTitle}</p>
+            <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 animate-slide-up font-medium" style={{animationDelay: '0.1s'}}>{t.signInTitle}</p>
           </div>
 
           <div className="space-y-4">
@@ -268,19 +375,34 @@ const App: React.FC = () => {
     );
   }
 
+  // Storage Setup Overlay
+  if (showStorageSetup && user) {
+    return (
+      <StorageSetupModal
+        lang={lang}
+        onComplete={handleStorageSetupComplete}
+        onCancel={() => {
+           // If they cancel, default to local? Or logout?
+           // Let's default to local for safety
+           handleStorageSetupComplete('local');
+        }}
+      />
+    );
+  }
+
   // Account Setup Wizard Overlay
   if (showSetup) {
     return (
       <div className={`min-h-screen flex items-center justify-center p-4 relative overflow-hidden ${theme === 'dark' ? 'mesh-bg' : 'light-mesh-bg'}`}>
-        <div className="relative z-10 w-full max-w-lg glass-panel p-8 rounded-3xl animate-zoom-in">
-          <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-gradient-to-tr from-purple-500 to-pink-500 rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-lg shadow-purple-500/30">
-               <Briefcase size={32} className="text-white" />
+        <div className="relative z-10 w-full max-w-lg glass-panel p-6 sm:p-8 rounded-3xl animate-zoom-in">
+          <div className="text-center mb-6 sm:mb-8">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-tr from-purple-500 to-pink-500 rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-lg shadow-purple-500/30">
+               <Briefcase size={28} className="text-white sm:w-8 sm:h-8" />
             </div>
-            <h2 className="text-3xl font-bold text-gradient mb-2 animate-slide-up">
+            <h2 className="text-2xl sm:text-3xl font-bold text-gradient mb-2 animate-slide-up">
               {t.setupTitle}
             </h2>
-            <p className="text-gray-500 dark:text-gray-400 animate-slide-up" style={{animationDelay: '0.1s'}}>{t.setupSubtitle}</p>
+            <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 animate-slide-up" style={{animationDelay: '0.1s'}}>{t.setupSubtitle}</p>
           </div>
 
           <form onSubmit={handleSetupComplete} className="space-y-6">
@@ -288,7 +410,7 @@ const App: React.FC = () => {
               <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 ml-1">
                 {t.entityType}
               </label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {ENTITY_TYPES[lang].map((type) => (
                   <button
                     key={type.value}
@@ -360,7 +482,7 @@ const App: React.FC = () => {
       <header className="sticky top-0 z-40 bg-white/70 dark:bg-cyber-panel/70 backdrop-blur-xl border-b border-gray-200/50 dark:border-white/5 animate-slide-up">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
-            <div className="flex items-center gap-4">
+            <button onClick={() => setShowLanding(true)} className="flex items-center gap-4 hover:opacity-80 transition-opacity text-left">
                <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/20 hover:scale-105 transition-transform duration-300">
                  <Briefcase size={24} />
                </div>
@@ -372,9 +494,17 @@ const App: React.FC = () => {
                     {user.settings?.entityType || 'Accountant'}
                  </span>
                </div>
-            </div>
+            </button>
 
             <div className="flex items-center gap-3">
+              <button 
+                onClick={() => setShowLanding(true)}
+                className="p-2.5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 rounded-xl transition active:scale-90 hidden sm:block"
+                title={lang === 'ar' ? 'الرئيسية' : 'Home'}
+              >
+                <Home size={20} />
+              </button>
+
               <button 
                 onClick={toggleTheme}
                 className="p-2.5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 rounded-xl transition active:scale-90"
@@ -411,6 +541,7 @@ const App: React.FC = () => {
           lang={lang} 
           onLogout={handleLogout}
           currency={user.settings?.currency || 'USD'} 
+          fileHandle={fileHandle}
         />
       </main>
 

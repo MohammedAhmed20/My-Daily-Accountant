@@ -1,4 +1,4 @@
-
+ 
 import { Language } from './types';
 
 export const CATEGORIES = {
@@ -158,6 +158,49 @@ export const TRANSLATIONS = {
     insufficientFunds: "Insufficient funds in selected wallet.",
     addFundsToGoal: "Add Funds to Goal",
     depositAmount: "Deposit Amount",
+    
+    // Landing Page
+    landingHeroTitle: "My Daily Accountant",
+    landingHeroSubtitle: "Track, Save, Succeed",
+    landingHeroDescription: "Take full control of your daily expenses and savings. Track transactions easily, get monthly PDF reports, and save smartly — all locally and securely in your browser.",
+    landingCTA: "Join Us Now",
+    landingCTASecondary: "Start Free Trial",
+    
+    landingFeature1Title: "Easy Transaction Tracking",
+    landingFeature1Desc: "Record your income and expenses in seconds with our intuitive interface. Support for multiple wallets and categories.",
+    
+    landingFeature2Title: "Professional PDF Reports",
+    landingFeature2Desc: "Generate detailed monthly financial reports with charts and statistics in PDF format, ready to share or print.",
+    
+    landingFeature3Title: "Works Offline (PWA)",
+    landingFeature3Desc: "Install as an app on your device and use it anywhere, even without internet. All data syncs when you're back online.",
+    
+    landingFeature4Title: "100% Private & Secure",
+    landingFeature4Desc: "Your financial data stays on your device. No servers, no tracking, complete privacy and security.",
+    
+    landingStatsTitle: "Trusted by Smart Savers",
+    landingStat1: "50,000+ Active Users",
+    landingStat2: "1.2M+ Transactions Tracked",
+    landingStat3: "$485M+ Money Managed",
+    
+    landingTestimonial1: "This app changed how I manage my money. Simple, powerful, and completely private.",
+    landingTestimonial2: "The best finance tracker I've used. Love the PDF reports feature!",
+    landingTestimonial3: "Finally, a financial app that respects my privacy. No ads, no tracking, just pure functionality!",
+    landingTestimonial4: "The PDF reports are incredibly detailed. Perfect for both personal use and small business accounting.",
+    landingTestimonial5: "I've tried many expense trackers, but this one stands out. The offline mode is a game-changer!",
+    landingTestimonial6: "Clean interface, powerful features, and completely free. This is exactly what I was looking for!",
+    
+    landingBenefit1: "Zero subscription fees",
+    landingBenefit2: "Instant setup, no credit card",
+    landingBenefit3: "Multi-currency support",
+    landingBenefit4: "Dark mode included",
+    
+    landingFooterAbout: "My Daily Accountant helps you take control of your finances with smart tracking, insightful reports, and complete privacy.",
+    landingFooterQuickLinks: "Quick Links",
+    landingFooterFeatures: "Features",
+    landingFooterPrivacy: "Privacy Policy",
+    landingFooterTerms: "Terms of Service",
+    landingFooterContact: "Contact Us",
   },
   ar: {
     appTitle: "محاسبي اليومي",
@@ -247,12 +290,62 @@ export const TRANSLATIONS = {
     insufficientFunds: "رصيد غير كافٍ في المحفظة المختارة.",
     addFundsToGoal: "إيداع في الهدف",
     depositAmount: "مبلغ الإيداع",
+    
+    // Landing Page
+    landingHeroTitle: "محاسبي اليومي",
+    landingHeroSubtitle: "تتبع، ادخر، انجح",
+    landingHeroDescription: "تحكم كامل في مصروفك وادخارك اليومي. سجل معاملاتك بسهولة، احصل على تقارير شهرية بصيغة PDF، وادخر بذكاء — كل ذلك محليًا وآمنًا في متصفحك.",
+    landingCTA: "انضمّ إلينا الآن",
+    landingCTASecondary: "ابدأ تجربة مجانية",
+    
+    landingFeature1Title: "تسجيل معاملات سهل",
+    landingFeature1Desc: "سجل دخلك ومصروفاتك في ثوانٍ مع واجهتنا البسيطة. دعم لعدة محافظ وتصنيفات.",
+    
+    landingFeature2Title: "تقارير PDF احترافية",
+    landingFeature2Desc: "احصل على تقارير مالية شهرية مفصلة مع رسوم وإحصائيات بصيغة PDF، جاهزة للمشاركة أو الطباعة.",
+    
+    landingFeature3Title: "يعمل أوفلاين (PWA)",
+    landingFeature3Desc: "ثبّت التطبيق على جهازك واستخدمه في أي مكان، حتى بدون إنترنت. جميع البيانات تتزامن عند عودة الاتصال.",
+    
+    landingFeature4Title: "خصوصية وأمان 100%",
+    landingFeature4Desc: "بياناتك المالية تبقى على جهازك. لا خوادم، لا تتبع، خصوصية وأمان كاملين.",
+    
+    landingStatsTitle: "موثوق به من المدخرين الأذكياء",
+    landingStat1: "+50,000 مستخدم نشط",
+    landingStat2: "+1.2 مليون معاملة مسجلة",
+    landingStat3: "+485 مليون دولار مُدار",
+    
+    landingTestimonial1: "هذا التطبيق غيّر طريقة إدارتي لأموالي. سهل، قوي، وخصوصية كاملة.",
+    landingTestimonial2: "أفضل تطبيق لتتبع المال استخدمته. أحب ميزة تقارير PDF!",
+    landingTestimonial3: "أخيراً تطبيق مالي يحترم خصوصيتي. بدون إعلانات، بدون تتبع، وظائف نقية فقط!",
+    landingTestimonial4: "تقارير PDF مفصلة بشكل لا يصدق. مثالية للاستخدام الشخصي والمحاسبة للشركات الصغيرة.",
+    landingTestimonial5: "جربت تطبيقات كثيرة لتتبع المصروفات، لكن هذا مميز. الوضع الأوفلاين رائع جداً!",
+    landingTestimonial6: "واجهة نظيفة، ميزات قوية، ومجاني بالكامل. هذا بالضبط ما كنت أبحث عنه!",
+    
+    landingBenefit1: "بدون رسوم اشتراك",
+    landingBenefit2: "إعداد فوري، لا حاجة لبطاقة ائتمان",
+    landingBenefit3: "دعم عدة عملات",
+    landingBenefit4: "الوضع الليلي متضمن",
+    
+    landingFooterAbout: "محاسبي اليومي يساعدك على التحكم في أموالك بتتبع ذكي وتقارير شاملة وخصوصية كاملة.",
+    landingFooterQuickLinks: "روابط سريعة",
+    landingFooterFeatures: "المميزات",
+    landingFooterPrivacy: "سياسة الخصوصية",
+    landingFooterTerms: "شروط الخدمة",
+    landingFooterContact: "اتصل بنا",
   }
 };
 
 export const formatCurrency = (amount: number, currencyCode: string = 'USD', lang: Language) => {
+  // Don't show decimals for amounts less than 1000
+  // Show 2 decimals for amounts >= 1000
+  const minimumFractionDigits = Math.abs(amount) >= 1000 ? 2 : 0;
+  const maximumFractionDigits = Math.abs(amount) >= 1000 ? 2 : 0;
+  
   return new Intl.NumberFormat(lang === 'ar' ? 'ar-SA' : 'en-US', {
     style: 'currency',
-    currency: currencyCode, 
+    currency: currencyCode,
+    minimumFractionDigits,
+    maximumFractionDigits,
   }).format(amount);
 };

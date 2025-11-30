@@ -9,6 +9,7 @@ export interface UserSettings {
   entityName: string;
   entityType: string;
   securityPin?: string;
+  storageType?: 'local' | 'file';
 }
 
 export interface User {

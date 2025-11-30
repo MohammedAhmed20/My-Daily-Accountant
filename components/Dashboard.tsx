@@ -16,19 +16,21 @@ import { Transaction, Language, TransactionType, User, BudgetMap, RecurrenceType
 import { TRANSLATIONS, CATEGORIES, TIPS, formatCurrency, WALLET_TYPES } from '../constants';
 import { storageService } from '../services/storageService';
 import { aiService } from '../services/aiService';
+import { fileSystemService } from '../services/fileSystem';
 
 interface DashboardProps {
   user: User;
   lang: Language;
   onLogout: () => void;
   currency: string;
+  fileHandle?: any;
 }
 
 // Colors for Charts
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#ff003c', '#00f0ff'];
 const WALLET_COLORS = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#ec4899'];
 
-export const Dashboard: React.FC<DashboardProps> = ({ user, lang, onLogout, currency }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ user, lang, onLogout, currency, fileHandle }) => {
   const t = TRANSLATIONS[lang];
   
   // State
@@ -92,73 +94,101 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, lang, onLogout, curr
 
   // --- Initialization & Migration ---
   useEffect(() => {
-    // Load Wallets
-    let loadedWallets = storageService.getWallets(user.email);
-    let loadedTransactions = storageService.getTransactions(user.email);
-    const loadedGoals = storageService.getGoals(user.email);
-    const savedBudgets = storageService.getBudgets(user.email);
+    const initData = async () => {
+      let loadedWallets: Wallet[] = [];
+      let loadedTransactions: Transaction[] = [];
+      let loadedGoals: SavingsGoal[] = [];
+      let savedBudgets: BudgetMap = {};
 
-    // MIGRATION: If no wallets exist, create default and assign existing txns
-    if (loadedWallets.length === 0) {
-      const defaultWallet: Wallet = {
-        id: crypto.randomUUID(),
-        name: 'Cash',
-        type: 'cash',
-        initialBalance: 0,
-        color: WALLET_COLORS[0]
-      };
-      loadedWallets = [defaultWallet];
-      storageService.saveWallets(user.email, loadedWallets);
-
-      // Assign transactions to default wallet if they don't have one
-      let migrated = false;
-      loadedTransactions = loadedTransactions.map(t => {
-        if (!t.walletId) {
-          migrated = true;
-          return { ...t, walletId: defaultWallet.id };
+      // Load from File if available
+      if (user.settings?.storageType === 'file' && fileHandle) {
+        try {
+          const data = await fileSystemService.load(fileHandle);
+          loadedWallets = data.wallets || [];
+          loadedTransactions = data.transactions || [];
+          loadedGoals = data.goals || [];
+          savedBudgets = data.budgets || {};
+        } catch (e) {
+          console.error("Failed to load from file", e);
+          // Fallback to empty or error handling
         }
-        return t;
-      });
-      if (migrated) {
-        storageService.saveTransactions(user.email, loadedTransactions);
+      } else {
+        // Load from LocalStorage
+        loadedWallets = storageService.getWallets(user.email);
+        loadedTransactions = storageService.getTransactions(user.email);
+        loadedGoals = storageService.getGoals(user.email);
+        savedBudgets = storageService.getBudgets(user.email);
       }
-    }
 
-    setWallets(loadedWallets);
-    setGoals(loadedGoals);
-    setBudgets(savedBudgets);
-    
-    // Process recurring after migration ensure wallet IDs
-    const processedTransactions = storageService.processRecurringTransactions(user.email, loadedTransactions);
-    setTransactions(processedTransactions);
-    
-    // Set default wallet for form
-    if (loadedWallets.length > 0) {
-      setFormData(prev => ({ ...prev, walletId: loadedWallets[0].id }));
-      setDepositData(prev => ({ ...prev, walletId: loadedWallets[0].id }));
-    }
+      // MIGRATION: If no wallets exist, create default and assign existing txns
+      if (loadedWallets.length === 0) {
+        const defaultWallet: Wallet = {
+          id: crypto.randomUUID(),
+          name: 'Cash',
+          type: 'cash',
+          initialBalance: 0,
+          color: WALLET_COLORS[0]
+        };
+        loadedWallets = [defaultWallet];
+        // Save initial wallet immediately
+        if (user.settings?.storageType !== 'file') {
+           storageService.saveWallets(user.email, loadedWallets);
+        }
 
-    if ('Notification' in window) {
-      setNotificationPermission(Notification.permission);
-    }
-  }, [user.email]);
+        // Assign transactions to default wallet if they don't have one
+        let migrated = false;
+        loadedTransactions = loadedTransactions.map(t => {
+          if (!t.walletId) {
+            migrated = true;
+            return { ...t, walletId: defaultWallet.id };
+          }
+          return t;
+        });
+        if (migrated && user.settings?.storageType !== 'file') {
+          storageService.saveTransactions(user.email, loadedTransactions);
+        }
+      }
+
+      setWallets(loadedWallets);
+      setGoals(loadedGoals);
+      setBudgets(savedBudgets);
+      
+      // Process recurring after migration ensure wallet IDs
+      const processedTransactions = storageService.processRecurringTransactions(user.email, loadedTransactions);
+      setTransactions(processedTransactions);
+      
+      // Set default wallet for form
+      if (loadedWallets.length > 0) {
+        setFormData(prev => ({ ...prev, walletId: loadedWallets[0].id }));
+        setDepositData(prev => ({ ...prev, walletId: loadedWallets[0].id }));
+      }
+
+      if ('Notification' in window) {
+        setNotificationPermission(Notification.permission);
+      }
+    };
+
+    initData();
+  }, [user.email, fileHandle, user.settings?.storageType]);
 
   // --- Persistence ---
   useEffect(() => {
-    storageService.saveTransactions(user.email, transactions);
-  }, [transactions, user.email]);
-
-  useEffect(() => {
-    storageService.saveBudgets(user.email, budgets);
-  }, [budgets, user.email]);
-
-  useEffect(() => {
-    storageService.saveWallets(user.email, wallets);
-  }, [wallets, user.email]);
-
-  useEffect(() => {
-    storageService.saveGoals(user.email, goals);
-  }, [goals, user.email]);
+    if (user.settings?.storageType === 'file' && fileHandle) {
+      const data = {
+        transactions,
+        wallets,
+        goals,
+        budgets
+      };
+      // Debounce save could be good here, but for now direct save
+      fileSystemService.save(fileHandle, data).catch(err => console.error("Save failed", err));
+    } else {
+      storageService.saveTransactions(user.email, transactions);
+      storageService.saveBudgets(user.email, budgets);
+      storageService.saveWallets(user.email, wallets);
+      storageService.saveGoals(user.email, goals);
+    }
+  }, [transactions, budgets, wallets, goals, user.email, fileHandle, user.settings?.storageType]);
 
   // --- Calculations ---
 
@@ -642,15 +672,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, lang, onLogout, curr
                       </button>
                     </div>
                  </div>
-                 <div className="max-h-[600px] overflow-y-auto custom-scrollbar p-2">
+                 <div className="max-h-[600px] overflow-y-auto custom-scrollbar p-2 overflow-x-auto">
                     <table className="w-full text-start text-sm dark:text-gray-300 border-separate border-spacing-y-1">
                       <thead className="sticky top-0 z-10">
                         <tr className="text-gray-400 text-xs uppercase tracking-wider">
-                          <th className="px-6 py-3 font-semibold text-left bg-gray-50/90 dark:bg-cyber-dark/90 backdrop-blur-sm rounded-l-xl">{t.date}</th>
-                          <th className="px-6 py-3 font-semibold text-left bg-gray-50/90 dark:bg-cyber-dark/90 backdrop-blur-sm">{t.category}</th>
-                          <th className="px-6 py-3 font-semibold text-left bg-gray-50/90 dark:bg-cyber-dark/90 backdrop-blur-sm">{t.description}</th>
-                          <th className="px-6 py-3 font-semibold text-right bg-gray-50/90 dark:bg-cyber-dark/90 backdrop-blur-sm">{t.amount}</th>
-                          <th className="px-6 py-3 font-semibold text-center bg-gray-50/90 dark:bg-cyber-dark/90 backdrop-blur-sm rounded-r-xl"></th>
+                          <th className="px-4 sm:px-6 py-3 font-semibold text-left bg-gray-50/90 dark:bg-cyber-dark/90 backdrop-blur-sm rounded-l-xl whitespace-nowrap">{t.date}</th>
+                          <th className="px-4 sm:px-6 py-3 font-semibold text-left bg-gray-50/90 dark:bg-cyber-dark/90 backdrop-blur-sm whitespace-nowrap">{t.category}</th>
+                          <th className="px-4 sm:px-6 py-3 font-semibold text-left bg-gray-50/90 dark:bg-cyber-dark/90 backdrop-blur-sm min-w-[150px]">{t.description}</th>
+                          <th className="px-4 sm:px-6 py-3 font-semibold text-right bg-gray-50/90 dark:bg-cyber-dark/90 backdrop-blur-sm whitespace-nowrap">{t.amount}</th>
+                          <th className="px-4 sm:px-6 py-3 font-semibold text-center bg-gray-50/90 dark:bg-cyber-dark/90 backdrop-blur-sm rounded-r-xl"></th>
                         </tr>
                       </thead>
                       <tbody>
@@ -832,7 +862,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, lang, onLogout, curr
       {/* 1. Transaction Modal */}
       {isFormOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-fade-in">
-          <div className="glass-panel w-full max-w-md rounded-3xl shadow-2xl p-8 border border-white/20 dark:border-white/10 animate-zoom-in relative overflow-hidden">
+          <div className="glass-panel w-full max-w-md rounded-3xl shadow-2xl p-6 sm:p-8 border border-white/20 dark:border-white/10 animate-zoom-in relative overflow-hidden max-h-[90vh] overflow-y-auto custom-scrollbar">
              {/* Decorative glow */}
              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"></div>
              
@@ -868,7 +898,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, lang, onLogout, curr
                  ))}
                </div>
 
-               <div className="grid grid-cols-2 gap-5">
+               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   <div>
                     <label className="text-xs font-bold text-gray-500 dark:text-gray-400 mb-2 block uppercase tracking-wider">{t.date}</label>
                     <input type="date" value={formData.date} onChange={e=>setFormData({...formData, date:e.target.value})} className="w-full p-3 bg-gray-50 dark:bg-black/20 rounded-xl border border-gray-200 dark:border-white/10 text-sm dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition" required />
@@ -882,7 +912,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, lang, onLogout, curr
 
                {/* Wallet Selection */}
                {formData.type === 'transfer' ? (
-                 <div className="grid grid-cols-2 gap-5">
+                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                    <div>
                      <label className="text-xs font-bold text-gray-500 dark:text-gray-400 mb-2 block uppercase tracking-wider">{t.fromWallet}</label>
                      <select value={formData.walletId} onChange={e=>setFormData({...formData, walletId: e.target.value})} className="w-full p-3 bg-gray-50 dark:bg-black/20 rounded-xl border border-gray-200 dark:border-white/10 text-sm dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition">
@@ -935,7 +965,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, lang, onLogout, curr
       {/* 2. Add Wallet Modal */}
       {isWalletModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-fade-in">
-          <div className="glass-panel w-full max-w-sm rounded-3xl shadow-2xl p-8 border border-white/20 dark:border-white/10 animate-zoom-in">
+          <div className="glass-panel w-full max-w-sm rounded-3xl shadow-2xl p-6 sm:p-8 border border-white/20 dark:border-white/10 animate-zoom-in">
              <h3 className="text-2xl font-black mb-6 dark:text-white">{editingWalletId ? (lang === 'ar' ? 'تعديل المحفظة' : 'Edit Wallet') : t.addWallet}</h3>
              <form onSubmit={handleWalletSubmit} className="space-y-5">
                 <div>
@@ -972,7 +1002,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, lang, onLogout, curr
       {/* 3. Add Goal Modal */}
       {isGoalModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-fade-in">
-           <div className="glass-panel w-full max-w-sm rounded-3xl shadow-2xl p-8 border border-white/20 dark:border-white/10 animate-zoom-in">
+           <div className="glass-panel w-full max-w-sm rounded-3xl shadow-2xl p-6 sm:p-8 border border-white/20 dark:border-white/10 animate-zoom-in">
              <h3 className="text-2xl font-black mb-6 dark:text-white">{t.addGoal}</h3>
              <form onSubmit={handleGoalSubmit} className="space-y-5">
                 <div>
@@ -1003,7 +1033,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, lang, onLogout, curr
       {/* 4. Deposit Modal */}
       {isDepositModalOpen && selectedGoal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-fade-in">
-          <div className="glass-panel w-full max-w-sm rounded-3xl shadow-2xl p-8 border border-white/20 dark:border-white/10 animate-zoom-in">
+          <div className="glass-panel w-full max-w-sm rounded-3xl shadow-2xl p-6 sm:p-8 border border-white/20 dark:border-white/10 animate-zoom-in">
             <h3 className="text-2xl font-black mb-1 dark:text-white">{t.addFundsToGoal}</h3>
             <p className="text-sm text-gray-500 mb-6 font-medium">{selectedGoal.name}</p>
             <form onSubmit={handleDepositSubmit} className="space-y-5">
