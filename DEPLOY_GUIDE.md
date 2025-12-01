@@ -1,3 +1,9 @@
+index-DWwlLpdR.js:27078 Uncaught Error: An API Key must be set when running in a browser
+    at new GoogleGenAI (index-DWwlLpdR.js:27078:13)
+    at index-DWwlLpdR.js:27124:12
+index.iife.js:1 content script loaded
+refresh.js:27 WebSocket connection to 'ws://localhost:8081/' failed: 
+initClient @ refresh.js:27
 # 🎯 إرشادات النشر على GitHub Pages - Deployment Guide
 
 > ملخص سريع للخطوات اللازمة لنشر تطبيقك على الإنترنت

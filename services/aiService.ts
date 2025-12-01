@@ -2,11 +2,27 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Transaction } from '../types';
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Initialize AI client only if API key is available
+const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+let ai: any = null;
+
+if (apiKey && apiKey !== 'PLACEHOLDER_API_KEY') {
+  ai = new GoogleGenAI({ apiKey });
+}
 
 export const aiService = {
   scanReceipt: async (base64Image: string): Promise<Partial<Transaction>> => {
     try {
+      if (!ai) {
+        const errorMsg = "Gemini API Key not configured. Please add GEMINI_API_KEY to .env.local file.";
+        console.warn(errorMsg);
+        return {
+          amount: 0,
+          description: "Gemini API not available",
+          category: "Other"
+        };
+      }
+
       // Remove data URL prefix if present
       const base64Data = base64Image.split(',')[1] || base64Image;
 
@@ -46,7 +62,12 @@ export const aiService = {
       return {};
     } catch (error) {
       console.error("AI Scan Error:", error);
-      throw error;
+      // Return fallback data instead of throwing
+      return {
+        amount: 0,
+        description: "Error processing receipt",
+        category: "Other"
+      };
     }
   }
 };
