@@ -536,13 +536,33 @@ const App: React.FC = () => {
 
       {/* Main Dashboard */}
       <main className="flex-grow">
-        <Dashboard 
-          user={user} 
-          lang={lang} 
-          onLogout={handleLogout}
-          currency={user.settings?.currency || 'USD'} 
-          fileHandle={fileHandle}
-        />
+        {showLanding ? (
+          <LandingPage
+            lang={lang}
+            theme={theme}
+            onToggleLang={toggleLang}
+            onToggleTheme={toggleTheme}
+            onGetStarted={() => setShowLanding(false)}
+            onShowPrivacy={() => {
+              setShowLanding(false);
+              setShowPrivacy(true);
+            }}
+            onShowTerms={() => {
+              setShowLanding(false);
+              setShowTerms(true);
+            }}
+            user={user}
+            onGoToDashboard={() => setShowLanding(false)}
+          />
+        ) : (
+          <Dashboard 
+            user={user} 
+            lang={lang} 
+            onLogout={handleLogout}
+            currency={user.settings?.currency || 'USD'} 
+            fileHandle={fileHandle}
+          />
+        )}
       </main>
 
       {/* Footer */}
