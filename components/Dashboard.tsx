@@ -513,7 +513,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, lang, onLogout, curr
     autoTable(doc, {
       head: [['Date', 'Type', 'Wallet', 'Category', 'Description', 'Amount']],
       body: transactions.map(t => [
-        t.date, t.type, wallets.find(w=>w.id===t.walletId)?.name || 'N/A', t.category, t.description, t.amount.toFixed(2)
+        t.date, t.type, wallets.find(w=>w.id===t.walletId)?.name || 'N/A', t.category, t.description, formatCurrency(t.amount, currency, lang)
       ]),
       startY: 40,
     });

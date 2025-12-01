@@ -151,14 +151,17 @@ export const storageService = {
     const headers = ['Date', 'Type', 'Wallet', 'Category', 'Description', 'Amount'];
     const csvContent = [
       headers.join(','),
-      ...transactions.map(t => [
-        t.date,
-        t.type,
-        t.walletId || 'N/A',
-        `"${t.category}"`, 
-        `"${t.description}"`,
-        t.amount
-      ].join(','))
+      ...transactions.map(t => {
+        const amtStr = Math.abs(t.amount) > 1000 ? t.amount.toFixed(2) : Math.round(t.amount).toString();
+        return [
+          t.date,
+          t.type,
+          t.walletId || 'N/A',
+          `"${t.category}"`,
+          `"${t.description}"`,
+          `"${amtStr}"`
+        ].join(',');
+      })
     ].join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
