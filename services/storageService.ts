@@ -153,17 +153,18 @@ export const storageService = {
     const csvContent = [
       headers.join(','),
       ...transactions.map(t => {
+        const esc = (v: any) => `"${String(v).replace(/"/g, '""')}"`;
         // Use formatCurrency but strip currency symbol for CSV numeric column
         const formatted = formatCurrency(t.amount, 'USD', 'en' as any);
         // Remove any non-digit, non-dot, non-comma characters (like currency symbols)
         const cleaned = formatted.replace(/[^0-9.,-]/g, '');
         return [
-          t.date,
-          t.type,
-          t.walletId || 'N/A',
-          `"${t.category}"`,
-          `"${t.description}"`,
-          `"${cleaned}"
+          esc(t.date),
+          esc(t.type),
+          esc(t.walletId || 'N/A'),
+          esc(t.category),
+          esc(t.description),
+          esc(cleaned)
         ].join(',');
       })
     ].join('\n');
