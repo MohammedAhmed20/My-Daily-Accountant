@@ -1,5 +1,6 @@
 
 import { Transaction, User, BudgetMap, Wallet, SavingsGoal } from '../types';
+import { formatCurrency } from '../constants';
 
 const STORAGE_PREFIX = 'MDA_APP_';
 
@@ -152,14 +153,17 @@ export const storageService = {
     const csvContent = [
       headers.join(','),
       ...transactions.map(t => {
-        const amtStr = Math.abs(t.amount) > 1000 ? t.amount.toFixed(2) : Math.round(t.amount).toString();
+        // Use formatCurrency but strip currency symbol for CSV numeric column
+        const formatted = formatCurrency(t.amount, 'USD', 'en' as any);
+        // Remove any non-digit, non-dot, non-comma characters (like currency symbols)
+        const cleaned = formatted.replace(/[^0-9.,-]/g, '');
         return [
           t.date,
           t.type,
           t.walletId || 'N/A',
           `"${t.category}"`,
           `"${t.description}"`,
-          `"${amtStr}"`
+          `"${cleaned}"
         ].join(',');
       })
     ].join('\n');

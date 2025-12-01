@@ -337,12 +337,13 @@ export const TRANSLATIONS = {
 };
 
 export const formatCurrency = (amount: number, currencyCode: string = 'USD', lang: Language) => {
-  // Don't show decimals for amounts less than or equal to 1000
-  // Show 2 decimals for amounts greater than 1000
-  const minimumFractionDigits = Math.abs(amount) > 1000 ? 2 : 0;
-  const maximumFractionDigits = Math.abs(amount) > 1000 ? 2 : 0;
-  
-  return new Intl.NumberFormat(lang === 'ar' ? 'ar-SA' : 'en-US', {
+  // Display numbers with no decimal places and use dot as thousands separator
+  // Force Latin digits and grouping with '.' by using 'de-DE' locale with Latin numerals
+  const locale = 'de-DE-u-nu-latn';
+  const minimumFractionDigits = 0;
+  const maximumFractionDigits = 0;
+
+  return new Intl.NumberFormat(locale, {
     style: 'currency',
     currency: currencyCode,
     minimumFractionDigits,
