@@ -9,7 +9,13 @@ export default defineConfig(({ mode }) => {
     base: mode === "production" ? "/My-Daily-Accountant/" : "/",
     server: {
       port: 3000,
-      host: "0.0.0.0",
+      host: "127.0.0.1",
+      middlewareMode: false,
+      hmr: {
+        protocol: "ws",
+        host: "localhost",
+        port: 3000,
+      },
     },
     build: {
       outDir: "dist",

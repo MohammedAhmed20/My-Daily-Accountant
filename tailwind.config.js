@@ -2,7 +2,7 @@
 export default {
   content: [
     "./index.html",
-    "./index.tsx",
+    "./index.ts",
     "./App.tsx",
     "./components/**/*.{ts,tsx}",
     "./services/**/*.{ts,tsx}",
